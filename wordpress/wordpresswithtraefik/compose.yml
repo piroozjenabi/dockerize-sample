@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  wp:
+    image: wordpress:php7.4-apache
+    container_name: wp
+    restart: always
+    volumes:
+      - .:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    labels:
+      - "traefik.enable=true"
+      
+      # Main service
+      - "traefik.http.services.wp.loadbalancer.server.port=80"
+      
+      # Main domain configuration (non-www)
+      - "traefik.http.routers.wp-secure.rule=Host(`example.com`)"
+      - "traefik.http.routers.wp-secure.entrypoints=websecure"
+      - "traefik.http.routers.wp-secure.tls=true"
+      - "traefik.http.routers.wp-secure.tls.certresolver=myresolver"
+      - "traefik.http.routers.wp-secure.service=wp"
+      
+      # Simple middleware to redirect www to non-www
+      - "traefik.http.middlewares.wwwtononww.redirectregex.regex=^https://www\\.example\\.com/(.*)"
+      - "traefik.http.middlewares.wwwtononww.redirectregex.replacement=https://example.com/$${1}"
+      - "traefik.http.middlewares.wwwtononww.redirectregex.permanent=true"
+      
+      # www domain - apply the redirect middleware
+      - "traefik.http.routers.www-secure.rule=Host(`www.example.com`)"
+      - "traefik.http.routers.www-secure.entrypoints=websecure"
+      - "traefik.http.routers.www-secure.middlewares=wwwtononww"
+      - "traefik.http.routers.www-secure.tls=true"
+      - "traefik.http.routers.www-secure.tls.certresolver=myresolver"
+    
+    networks:
+      - traefik_proxy
+      
+networks:
+  traefik_proxy:
+    external: true
+    name: traefik_proxy
