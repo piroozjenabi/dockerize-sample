@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  exapi:
+    container_name: exapi
+    build: .
+    ports:
+      - "7012:7000"
+    volumes:
+      - .:/code
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
